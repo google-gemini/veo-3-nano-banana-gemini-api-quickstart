@@ -1,10 +1,12 @@
 import React from "react";
+import { Select } from "@/components/ui/input";
 import { ChevronDown } from "lucide-react";
 
 type StudioMode =
   | "create-image"
   | "edit-image"
   | "compose-image"
+  | "compose-album"
   | "create-video";
 
 interface ModelSelectorProps {
@@ -27,7 +29,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
       ];
     } else {
       // For image modes
-      return ["gemini-2.5-flash-image-preview", "imagen-4.0-fast-generate-001"];
+      return ["gemini-2.5-flash-image-preview", "gemini-3-pro-image-preview", "imagen-4.0-fast-generate-001"];
     }
   };
 
@@ -37,6 +39,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
     if (model.includes("veo-3.0-fast")) return "Veo 3 - Fast";
     if (model.includes("veo-3.0")) return "Veo 3";
     if (model.includes("veo-2.0")) return "Veo 2";
+    if (model.includes("gemini-3-pro-image-preview")) return "Nano Banana Pro";
     if (model.includes("gemini-2.5")) return "Gemini 2.5 Flash";
     if (model.includes("imagen-4.0")) return "Imagen 4.0 Fast";
     return model;
@@ -44,19 +47,19 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
 
   return (
     <div className="relative flex items-center">
-      <select
+      <Select
         aria-label="Model selector"
         value={selectedModel}
         onChange={(e) => setSelectedModel(e.target.value)}
-        className="pl-3 pr-8 py-2 text-sm rounded-md border  focus:outline-none focus:ring-2 focus:ring-gray-500 appearance-none"
+        className="h-9 w-auto min-w-40 border-transparent bg-secondary text-xs font-medium"
       >
         {models.map((model) => (
           <option key={model} value={model}>
             {formatModelName(model)}
           </option>
         ))}
-      </select>
-      <ChevronDown className="absolute right-3 h-4 w-4 text-gray-400 pointer-events-none" />
+      </Select>
+      <ChevronDown className="pointer-events-none absolute right-2.5 size-4 text-muted-foreground" />
     </div>
   );
 };

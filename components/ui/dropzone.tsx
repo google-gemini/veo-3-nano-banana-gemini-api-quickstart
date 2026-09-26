@@ -28,8 +28,8 @@ const Dropzone = ({ onDrop, className, children }: DropzoneComponentProps) => {
     <div
       {...getRootProps()}
       className={cn(
-        "flex flex-col items-center justify-center w-full h-32 px-4 py-6 text-center border-2 border-dashed rounded-lg cursor-pointer border-stone-300 dark:border-stone-700 bg-stone-50 dark:bg-stone-900 hover:bg-stone-100 dark:hover:bg-stone-800",
-        { "border-primary dark:border-primary": isDragActive },
+        "flex h-32 w-full cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-border bg-card/50 px-4 py-6 text-center transition-colors hover:border-primary/50 hover:bg-accent",
+        isDragActive && "border-primary bg-primary/8",
         className
       )}
     >
@@ -38,14 +38,12 @@ const Dropzone = ({ onDrop, className, children }: DropzoneComponentProps) => {
         {children ? (
           children
         ) : isDragActive ? (
-          <p className="text-stone-600 dark:text-stone-300">
-            Drop the files here ...
-          </p>
+          <p className="text-sm font-medium text-primary">Drop the files here…</p>
         ) : (
-          <div className="flex flex-col items-center justify-center gap-2 text-stone-600 dark:text-stone-300">
-            <UploadCloudIcon className="w-8 h-8" />
+          <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground">
+            <UploadCloudIcon className="size-8" />
             <p className="text-sm">
-              Drag & drop files here, or click to select files
+              Drag &amp; drop files here, or click to select files
             </p>
           </div>
         )}
