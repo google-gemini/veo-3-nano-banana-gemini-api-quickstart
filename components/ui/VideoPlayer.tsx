@@ -374,9 +374,9 @@ export default function VideoPlayer({
         {/* Bottom overlay trim bar (toggleable) */}
         {showTrimBar && (
           <div className="absolute left-0 right-0 bottom-2 z-20 px-4">
-            <div className="backdrop-blur-sm bg-white/30 rounded-xl px-3 py-2">
+            <div className="rounded-xl border border-border bg-card/90 px-3 py-2 backdrop-blur-md">
               <div className="flex items-center gap-3">
-                <span className="text-xs text-slate-800/90 min-w-8 text-center">
+                <span className="min-w-8 text-center text-xs text-foreground">
                   {formatTime(trimRange[0])}
                 </span>
                 <div className="relative flex-1 h-6 flex">
@@ -416,27 +416,27 @@ export default function VideoPlayer({
                           width: 8,
                           height: 28,
                           borderRadius: 4,
-                          backgroundColor: "#000",
-                          borderColor: "#000",
+                          backgroundColor: "var(--primary)",
+                          borderColor: "var(--primary)",
                           marginBottom: 10,
                         },
                       }}
                     />
                   </div>
                 </div>
-                <span className="text-xs text-slate-800/90 min-w-8 text-center">
+                <span className="min-w-8 text-center text-xs text-foreground">
                   {formatTime(trimRange[1])}
                 </span>
                 <div className="flex items-center gap-2 pl-1">
                   <button
                     onClick={handleTrim}
-                    className="inline-flex items-center gap-1 h-8 px-3 rounded-md backdrop-blur-sm bg-black/60 hover:bg-black/70 text-white text-xs cursor-pointer"
+                    className="inline-flex items-center gap-1 h-8 px-3 rounded-md backdrop-blur-sm bg-primary text-primary-foreground hover:brightness-110 text-xs cursor-pointer"
                   >
                     Cut
                   </button>
                   <button
                     onClick={handleResetTrim}
-                    className="inline-flex items-center gap-1 h-8 px-3 rounded-md backdrop-blur-sm bg-white/60 hover:bg-white/70 text-black text-xs cursor-pointer"
+                    className="inline-flex items-center gap-1 h-8 px-3 rounded-md backdrop-blur-sm bg-secondary text-secondary-foreground hover:bg-accent text-xs cursor-pointer"
                     disabled={!isTrimmed}
                   >
                     Reset
@@ -449,11 +449,11 @@ export default function VideoPlayer({
       </div>
 
       {/* Controls below the video */}
-      <div className="p-4 text-white">
-        <div className="flex items-center gap-4 backdrop-blur-sm bg-white/30 rounded-xl px-3 py-2">
+      <div className="p-4 text-foreground">
+        <div className="flex items-center gap-4 rounded-xl border border-border bg-card/90 px-3 py-2 backdrop-blur-md">
           <button
             onClick={handlePlayPause}
-            className="focus:outline-none text-black"
+            className="outline-none text-foreground"
           >
             {playing ? (
               <Pause className="w-6 h-6" />
@@ -471,19 +471,19 @@ export default function VideoPlayer({
               onChange={handleSeekChange}
               onAfterChange={() => setSeeking(false)}
               styles={{
-                track: { backgroundColor: "#0ea5e9" },
-                handle: { backgroundColor: "#0ea5e9", borderColor: "#0ea5e9" },
+                track: { backgroundColor: "var(--primary)" },
+                handle: { backgroundColor: "var(--primary)", borderColor: "var(--primary)" },
               }}
             />
           </div>
-          <div className="text-sm text-black">
+          <div className="text-sm text-foreground">
             {formatTime(currentDisplaySeconds)} /{" "}
             {formatTime(totalDisplaySeconds)}
           </div>
           <div className="flex items-center gap-2">
             <button
               onClick={toggleMute}
-              className="focus:outline-none text-black"
+              className="outline-none text-foreground"
             >
               {muted || volume === 0 ? (
                 <VolumeX className="w-5 h-5" />
@@ -499,26 +499,26 @@ export default function VideoPlayer({
                 value={volume}
                 onChange={handleVolumeChange}
                 styles={{
-                  track: { backgroundColor: "white" },
-                  handle: { backgroundColor: "white", borderColor: "white" },
+                  track: { backgroundColor: "var(--foreground)" },
+                  handle: { backgroundColor: "var(--foreground)", borderColor: "var(--foreground)" },
                 }}
               />
             </div>
             <button
               onClick={() => setShowTrimBar((s) => !s)}
               title={showTrimBar ? "Hide trimmer" : "Show trimmer"}
-              className={`ml-1 focus:outline-none hover:opacity-80 text-black`}
+              className={"ml-1 outline-none transition-opacity hover:opacity-80 text-foreground"}
             >
               <Scissors
                 className={`w-5 h-5 transition-transform duration-150 ${
-                  showTrimBar ? "rotate-270" : "rotate-0"
+                  showTrimBar ? "rotate-90" : "rotate-0"
                 }`}
               />
             </button>
             <button
               onClick={onDownload}
               title="Download"
-              className="ml-1 focus:outline-none text-black hover:opacity-80"
+              className="ml-1 outline-none text-foreground hover:opacity-80"
             >
               <Download className="w-5 h-5" />
             </button>

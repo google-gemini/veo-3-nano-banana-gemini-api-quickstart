@@ -3,12 +3,14 @@
 import React from "react";
 import {
   RotateCcw,
-  Image,
+  Image as ImageIcon,
   Edit,
   Palette,
   Video,
   Download,
   Sparkles,
+  Lock,
+  Loader2,
 } from "lucide-react";
 import ModelSelector from "@/components/ui/ModelSelector";
 import {
@@ -16,11 +18,16 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { PromptLibrary } from "@/components/ui/PromptLibrary";
+import VoiceInput from "@/components/ui/VoiceInput";
+import { Button } from "@/components/ui/button";
+import { Segmented, type SegmentedOption } from "@/components/ui/segmented";
 
 type StudioMode =
   | "create-image"
   | "edit-image"
   | "compose-image"
+  | "compose-album"
   | "create-video";
 
 interface ComposerProps {
@@ -52,6 +59,22 @@ interface ComposerProps {
   downloadImage: () => void;
 }
 
+const PLACEHOLDERS: Record<StudioMode, string> = {
+  "create-image": "Describe the image you want to create...",
+  "edit-image": "Describe how to edit this image...",
+  "compose-image": "Describe how to combine these images...",
+  "compose-album": "Pick a theme and add prompts in the side panel.",
+  "create-video": "Generate a video from text and frames...",
+};
+
+const ACTION_LABEL: Record<StudioMode, string> = {
+  "create-image": "Generate",
+  "edit-image": "Apply Edit",
+  "compose-image": "Compose",
+  "compose-album": "Generate Album",
+  "create-video": "Generate Video",
+};
+
 const Composer: React.FC<ComposerProps> = ({
   mode,
   setMode,
@@ -75,29 +98,12 @@ const Composer: React.FC<ComposerProps> = ({
   resetAll,
   downloadImage,
 }) => {
+  const textareaRef = React.useRef<HTMLTextAreaElement>(null);
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       startGeneration();
-    }
-  };
-
-  const handleReset = () => {
-    resetAll();
-  };
-
-  const getTabText = (tabMode: StudioMode) => {
-    switch (tabMode) {
-      case "create-image":
-        return "Create Image";
-      case "edit-image":
-        return "Edit Image";
-      case "compose-image":
-        return "Compose Image";
-      case "create-video":
-        return "Create Video";
-      default:
-        return "Unknown";
     }
   };
 
@@ -124,215 +130,178 @@ const Composer: React.FC<ComposerProps> = ({
       return "Use edit, compose, or video modes with existing image";
     }
 
-    return null;
+    return undefined;
   };
 
+  // The album panel drives its own prompts, so there is no text field there.
+  const showTextarea = mode !== "compose-album";
+
+  const currentPrompt =
+    mode === "create-image"
+      ? imagePrompt
+      : mode === "edit-image"
+        ? editPrompt
+        : mode === "compose-image"
+          ? composePrompt
+          : prompt;
+
+  const setCurrentPrompt = (value: string) => {
+    if (mode === "create-image") setImagePrompt(value);
+    else if (mode === "edit-image") setEditPrompt(value);
+    else if (mode === "compose-image") setComposePrompt(value);
+    else setPrompt(value);
+  };
+
+  // Grow the field with its content, up to a sensible ceiling.
+  React.useEffect(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = Math.min(el.scrollHeight, 160) + "px";
+  }, [currentPrompt, mode]);
+
+  const busy = isGenerating || geminiBusy;
+
+  const modeOptions: SegmentedOption<StudioMode>[] = [
+    {
+      value: "create-image",
+      label: "Create",
+      icon: <ImageIcon aria-hidden="true" />,
+      accent: "var(--mode-create)",
+      disabled: isTabDisabled("create-image"),
+      tooltip: getTabTooltip("create-image") ?? "Create Image",
+    },
+    {
+      value: "edit-image",
+      label: "Edit",
+      icon: <Edit aria-hidden="true" />,
+      accent: "var(--mode-edit)",
+      disabled: isTabDisabled("edit-image"),
+      tooltip: getTabTooltip("edit-image") ?? "Edit Image",
+    },
+    {
+      value: "compose-image",
+      label: "Compose",
+      icon: <Palette aria-hidden="true" />,
+      accent: "var(--mode-compose)",
+      disabled: isTabDisabled("compose-image"),
+      tooltip: getTabTooltip("compose-image") ?? "Compose Image",
+    },
+    {
+      value: "compose-album",
+      label: "Album",
+      icon: <ImageIcon aria-hidden="true" />,
+      accent: "var(--mode-album)",
+      disabled: isTabDisabled("compose-album"),
+      tooltip: getTabTooltip("compose-album") ?? "Compose Album",
+    },
+    {
+      value: "create-video",
+      label: "Video",
+      icon: <Video aria-hidden="true" />,
+      accent: "var(--mode-video)",
+      disabled: true,
+      tooltip: "Create Video (Premium only)",
+      trailing: <Lock className="ml-0.5 size-3" aria-hidden="true" />,
+    },
+  ];
+
   return (
-    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-20 w-[min(100%,48rem)] px-4">
-      <div className="relative text-slate-900/80 backdrop-blur-sm bg-white/30 px-3 py-1 rounded-lg ">
+    <div className="pointer-events-none fixed inset-x-0 bottom-0 z-[var(--z-composer)] flex justify-center px-2 pb-2 md:px-4 md:pb-4 lg:pb-6">
+      <div className="pointer-events-auto relative w-full max-w-3xl">
         {hasGeneratedImage && !hasVideoUrl && (
-          <div className="absolute -top-12 right-0 z-10">
-            <button
-              onClick={downloadImage}
-              className="inline-flex items-center gap-2 bg-white/30 hover:bg-white text-slate-700 py-2 px-4 rounded-lg transition-colors"
-              title="Download Image"
-            >
-              <Download className="w-4 h-4" />
+          <div className="absolute -top-14 right-0">
+            <Button variant="glass" size="md" onClick={downloadImage}>
+              <Download aria-hidden="true" />
               <span>Download</span>
-            </button>
+            </Button>
           </div>
         )}
-        <div className="flex items-center justify-between mb-3">
-          <ModelSelector
-            selectedModel={selectedModel}
-            setSelectedModel={setSelectedModel}
-            mode={mode}
-          />
-        </div>
 
-        {mode === "create-video" && (
-          <textarea
-            value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Generate a video with text and frames..."
-            className="w-full bg-transparent focus:outline-none resize-none text-base font-normal placeholder-slate-800/60"
-            rows={2}
-          />
-        )}
+        <div className="rounded-2xl border border-border bg-card/95 p-3 shadow-elevated backdrop-blur-xl">
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <ModelSelector
+              selectedModel={selectedModel}
+              setSelectedModel={setSelectedModel}
+              mode={mode}
+            />
+          </div>
 
-        {mode === "create-image" && (
-          <textarea
-            value={imagePrompt}
-            onChange={(e) => setImagePrompt(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Describe the image to create..."
-            className="w-full bg-transparent focus:outline-none resize-none text-base font-normal placeholder-slate-800/60"
-            rows={2}
-          />
-        )}
+          {showTextarea ? (
+            <textarea
+              ref={textareaRef}
+              value={currentPrompt}
+              onChange={(e) => setCurrentPrompt(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder={PLACEHOLDERS[mode]}
+              aria-label="Prompt"
+              rows={2}
+              className="w-full resize-none bg-transparent px-1 py-1 text-base text-foreground outline-none placeholder:text-muted-foreground"
+            />
+          ) : (
+            <p className="px-1 py-3 text-sm text-muted-foreground">
+              {PLACEHOLDERS["compose-album"]}
+            </p>
+          )}
 
-        {mode === "edit-image" && (
-          <textarea
-            value={editPrompt}
-            onChange={(e) => setEditPrompt(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Describe how to edit the image..."
-            className="w-full bg-transparent focus:outline-none resize-none text-base font-normal placeholder-slate-800/60"
-            rows={2}
-          />
-        )}
+          <div className="mt-2 flex items-center justify-between gap-2">
+            <div className="flex items-center gap-1">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={resetAll}
+                    aria-label="Reset everything"
+                  >
+                    <RotateCcw aria-hidden="true" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Reset</p>
+                </TooltipContent>
+              </Tooltip>
 
-        {mode === "compose-image" && (
-          <textarea
-            value={composePrompt}
-            onChange={(e) => setComposePrompt(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Describe how to combine the images..."
-            className="w-full bg-transparent focus:outline-none resize-none text-base font-normal placeholder-slate-800/60"
-            rows={2}
-          />
-        )}
+              <PromptLibrary
+                currentPrompt={currentPrompt}
+                onSelectPrompt={setCurrentPrompt}
+              />
 
-        <div className="flex items-center justify-between mt-3">
-          <div className="flex items-center gap-2">
-            <button
-              onClick={handleReset}
-              className="h-10 w-10 flex items-center justify-center bg-white/50 rounded-full hover:bg-white/70 cursor-pointer"
-              title="Reset"
+              <VoiceInput
+                onTranscript={(text) =>
+                  setCurrentPrompt(
+                    currentPrompt ? currentPrompt + " " + text : text
+                  )
+                }
+              />
+            </div>
+
+            {/* The primary action: unmistakably enabled or disabled. */}
+            <Button
+              variant="primary"
+              onClick={startGeneration}
+              disabled={!canStart || busy}
+              className="gap-2 rounded-full px-5"
+              title={ACTION_LABEL[mode]}
             >
-              <RotateCcw className="w-5 h-5" />
-            </button>
+              {busy ? (
+                <Loader2 className="animate-spin" aria-hidden="true" />
+              ) : (
+                <Sparkles aria-hidden="true" />
+              )}
+              <span className="hidden sm:inline">
+                {busy ? "Working" : ACTION_LABEL[mode]}
+              </span>
+            </Button>
           </div>
-          <button
-            onClick={startGeneration}
-            disabled={!canStart || isGenerating || geminiBusy}
-            aria-busy={isGenerating || geminiBusy}
-            className={`h-10 w-10 flex items-center justify-center rounded-full text-white transition ${
-              !canStart || isGenerating || geminiBusy
-                ? "bg-white/50 cursor-not-allowed"
-                : "bg-white/50 hover:bg-white/70 cursor-pointer"
-            }`}
-            title={
-              mode === "create-image"
-                ? "Generate Image"
-                : mode === "edit-image"
-                ? "Edit Image"
-                : mode === "compose-image"
-                ? "Compose Image"
-                : "Generate Video"
-            }
-          >
-            {isGenerating || geminiBusy ? (
-              <div className="w-4 h-4 border-2 border-t-transparent border-black rounded-full animate-spin" />
-            ) : (
-              <Sparkles className="w-5 h-5 text-black" />
-            )}
-          </button>
-        </div>
 
-        {/* Mode Badges */}
-        <div className="flex gap-1 mt-3 bg-white/10 rounded-md p-1 border border-white/20">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                onClick={() =>
-                  !isTabDisabled("create-image") && setMode("create-image")
-                }
-                disabled={isTabDisabled("create-image")}
-                className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm transition flex-1 ${
-                  mode === "create-image"
-                    ? "bg-indigo-400/30 text-slate-900 backdrop-blur-sm"
-                    : isTabDisabled("create-image")
-                    ? "text-slate-400 cursor-not-allowed opacity-50"
-                    : "text-slate-700 hover:bg-white/30 hover:text-slate-900"
-                }`}
-              >
-                <Image className="w-4 h-4" aria-hidden="true" />
-                {getTabText("create-image")}
-              </button>
-            </TooltipTrigger>
-            {getTabTooltip("create-image") && (
-              <TooltipContent>
-                <p>{getTabTooltip("create-image")}</p>
-              </TooltipContent>
-            )}
-          </Tooltip>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                onClick={() =>
-                  !isTabDisabled("edit-image") && setMode("edit-image")
-                }
-                disabled={isTabDisabled("edit-image")}
-                className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm transition flex-1 ${
-                  mode === "edit-image"
-                    ? "bg-blue-400/30 text-slate-900 backdrop-blur-sm"
-                    : isTabDisabled("edit-image")
-                    ? "text-slate-400 cursor-not-allowed opacity-50"
-                    : "text-slate-700 hover:bg-white/30 hover:text-slate-900"
-                }`}
-              >
-                <Edit className="w-4 h-4" />
-                {getTabText("edit-image")}
-              </button>
-            </TooltipTrigger>
-            {getTabTooltip("edit-image") && (
-              <TooltipContent>
-                <p>{getTabTooltip("edit-image")}</p>
-              </TooltipContent>
-            )}
-          </Tooltip>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                onClick={() =>
-                  !isTabDisabled("compose-image") && setMode("compose-image")
-                }
-                disabled={isTabDisabled("compose-image")}
-                className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm transition flex-1 ${
-                  mode === "compose-image"
-                    ? "bg-green-400/30 text-slate-900 backdrop-blur-sm"
-                    : isTabDisabled("compose-image")
-                    ? "text-slate-400 cursor-not-allowed opacity-50"
-                    : "text-slate-700 hover:bg-white/30 hover:text-slate-900"
-                }`}
-              >
-                <Palette className="w-4 h-4" />
-                {getTabText("compose-image")}
-              </button>
-            </TooltipTrigger>
-            {getTabTooltip("compose-image") && (
-              <TooltipContent>
-                <p>{getTabTooltip("compose-image")}</p>
-              </TooltipContent>
-            )}
-          </Tooltip>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                onClick={() =>
-                  !isTabDisabled("create-video") && setMode("create-video")
-                }
-                disabled={isTabDisabled("create-video")}
-                className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm transition flex-1 ${
-                  mode === "create-video"
-                    ? "bg-purple-400/30 text-slate-900 backdrop-blur-sm"
-                    : isTabDisabled("create-video")
-                    ? "text-slate-400 cursor-not-allowed opacity-50"
-                    : "text-slate-700 hover:bg-white/30 hover:text-slate-900"
-                }`}
-              >
-                <Video className="w-4 h-4" />
-                {getTabText("create-video")}
-              </button>
-            </TooltipTrigger>
-            {getTabTooltip("create-video") && (
-              <TooltipContent>
-                <p>{getTabTooltip("create-video")}</p>
-              </TooltipContent>
-            )}
-          </Tooltip>
+          <Segmented
+            aria-label="Studio mode"
+            options={modeOptions}
+            value={mode}
+            onChange={setMode}
+            className="mt-3"
+          />
         </div>
       </div>
     </div>

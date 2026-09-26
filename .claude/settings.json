@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(gcloud --version)",
+      "Bash(gcloud auth:*)",
+      "Bash(gh --version)",
+      "Bash(gcloud artifacts:*)",
+      "Bash(gcloud services:*)",
+      "Bash(gcloud iam:*)",
+      "Bash(winget install:*)",
+      "Bash(export PATH=\"$PATH:/c/Program Files/GitHub CLI:/c/Program Files \\(x86\\)/GitHub CLI\")",
+      "Bash(gh auth:*)",
+      "Bash(gcloud projects:*)",
+      "Bash(export PATH=\"$PATH:/c/Program Files/GitHub CLI\")",
+      "Bash(gh secret:*)"
+    ]
+  }
+}
