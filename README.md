@@ -1,3 +1,6 @@
+> [!IMPORTANT]
+> **This repository is archived and no longer maintained.** The preview models referenced in this quickstart (`gemini-2.5-flash-image-preview`, `imagen-4.0-fast-generate-001`, and `veo-3.0-*`) have been shut down. See the latest [Image Generation (Nano Banana)](https://ai.google.dev/gemini-api/docs/image-generation) and [Video Generation](https://ai.google.dev/gemini-api/docs/video) guides in the Gemini API documentation.
+
 # Gemini API Veo 3 & Nano Banana Quickstart
 
 A NextJs quickstart for creating and editing images and videos using Google's latest Gemini API models including [Veo 3](https://ai.google.dev/gemini-api/docs/video), [Imagen 4](https://ai.google.dev/gemini-api/docs/imagen), and [Gemini 2.5 Flash Image aka nano banana](https://ai.google.dev/gemini-api/docs/image-generations). 
